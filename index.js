@@ -2,10 +2,13 @@ import express from 'express'
 import cors from 'cors'
 import mongoose, { model, Schema } from 'mongoose'
 import bodyParser from 'body-parser'
+import dotenv from 'dotenv'
 
 // import path from 'path'
 // import multer from 'multer'
 // import { fileURLToPath } from 'url'
+
+dotenv.config()
 
 const app = express()
 const port = 3000
@@ -18,7 +21,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 
-mongoose.connect("mongodb+srv://Erfan:ERFAN123AALAM@erfan.1vy9lat.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Erfan")
+mongoose.connect(process.env.MONGODB_URL)
     .then(() => {
         console.log("Connected succesfully");
         app.listen(port, () => {
