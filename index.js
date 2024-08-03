@@ -3,6 +3,7 @@ import cors from 'cors'
 import mongoose, { model, Schema } from 'mongoose'
 import bodyParser from 'body-parser'
 import dotenv from 'dotenv'
+import nodemailer from 'nodemailer'
 
 // import path from 'path'
 // import multer from 'multer'
@@ -28,6 +29,20 @@ mongoose.connect(process.env.MONGODB_URL)
             console.log("Server Started at port Number : " + port);
         })
     })
+
+
+
+// Nodemailer environment
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+     user: process.env.MAIL_USER,
+     pass: process.env.MAIL_PASS,
+    },
+   });
 
 
 
@@ -126,21 +141,32 @@ const CartScmeha = new Schema({
             desc: String,
             price: String
         }
-    ]
+    ],
+    address: [
+        {
+            name: String,
+            phone: String,
+            address: String,
+            country: String,
+            state: String,
+            city: String,
+            zip: String
+        }
+    ],
 })
 
-const cartModel = model("cart",CartScmeha)
+const cartModel = model("cart", CartScmeha)
 
-app.get("/getCart",async(req,res)=>{
+app.get("/getCart", async (req, res) => {
 
     const cart = await cartModel.find()
 
     res.json(cart)
 })
 
-app.post("/addToCart",async(req,res)=>{
+app.post("/addToCart", async (req, res) => {
 
-    let {userId, product} = req.body
+    let { userId, product } = req.body
 
     const cart = await cartModel.findOne({ userId });
 
@@ -149,44 +175,86 @@ app.post("/addToCart",async(req,res)=>{
 
         cart.items.push(product);
         await cart.save();
-      } else {
+    } else {
 
         const newCart = new cartModel({
             userId,
-            items:product
+            items: product
         })
 
         await newCart.save();
-      }
+    }
 
-      res.json("Product added to cart succesfully")
+    res.json("Product added to cart succesfully")
 })
 
-app.delete("/removeFromCart",async(req,res)=>{
-     const {userId, prodId} = req.body
+app.delete("/removeFromCart", async (req, res) => {
+    const { userId, prodId } = req.body
 
-    const cart = await cartModel.findOne({userId})
+    const cart = await cartModel.findOne({ userId })
+
+    console.log(cart);
 
     const index = cart.items.findIndex(item => item.id === prodId);
 
-    // cart.items = cart.items.filter((item)=>{
-    //     return item.id !== prodId
-    // })
+    cart.items.splice(index, 1);
 
-    cart.items.splice(index, 1); 
-    
     await cart.save()
 
     res.json("Product removed from cart")
 })
 
-app.delete("/removeCart",async(req,res)=>{
-    const {userId} = req.body
+app.delete("/removeCart", async (req, res) => {
+    const { userId } = req.body
 
-    await cartModel.findOneAndDelete({userId})
+    await cartModel.findOneAndDelete({ userId })
 
     res.json("Product removes from cart")
     console.log("removed from  cart");
 })
 
+
+function itemsToHtmlTable(items) {
+    let html = '<table border="1"><tr><th>Item</th><th>Price</th></tr>';
+    items.forEach(item => {
+      html += `<tr><td>${item.title}</td><td>${item.price}</td></tr>`;
+    });
+    html += '</table>';
+    return html;
+  }
+
+app.post("/setAddress", async (req, res) => {
+
+    const { address, userId, userEmail } = req.body
+
+
+    const cart = await cartModel.findOne({ userId })
+
+    cart.address = address
+
+    const newCart = await cart.save()
+
+    
+    const items = newCart.items
+    const itemsText = items.map(item => `Item: ${item.title}, Quantity: ${item.desc}, Price: ${item.price}`).join('\n');
+
+    const itemsHtml = itemsToHtmlTable(items);
+
+    res.json("address succesfully added")
+
+
+    transporter.sendMail({
+        from: process.env.MAIL_USER,
+        to: userEmail,
+        subject: "Thank You for order, Your Order is Confirmed",
+        text: `Thank you for your order. Here are the details:\n\n${itemsText}`,
+        html: `<b>Thank you for your order. Here are the details:</b><br>${itemsHtml}`,
+    }, (error, info) => {
+        if (error) {
+            return console.log('Error occurred:', error.message);
+        }
+        console.log('Message sent:', info.response);
+
+    });
+})
 
