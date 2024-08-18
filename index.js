@@ -68,6 +68,14 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
+    quantity:{
+        type: String,
+        required: true
+    },
+    category : {
+        type: String,
+        required: true
+    }
 })
 
 
@@ -92,7 +100,7 @@ const productModel = model("product", productSchema)
 
 
 app.post("/addProduct", async (req, res) => {
-    let { id, file, title, desc, price } = req.body
+    let { id, file, title, desc, price,quantity,category } = req.body
     // let file = req.file.path
     // console.log(id,file);
 
@@ -101,7 +109,9 @@ app.post("/addProduct", async (req, res) => {
         file,
         title,
         desc,
-        price
+        price,
+        quantity,
+        category
     })
 
     await productToSave.save()
@@ -139,7 +149,9 @@ const CartScmeha = new Schema({
             file: String,
             title: String,
             desc: String,
-            price: String
+            price: String,
+            quantity: String,
+            category: String
         }
     ],
     address: [
