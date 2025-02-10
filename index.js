@@ -33,7 +33,9 @@ mongoose.connect(process.env.MONGODB_URL)
 
 
 // Nodemailer environment
+
 const transporter = nodemailer.createTransport({
+    type: 'SMTP',
     service: 'gmail',
     host: 'smtp.gmail.com',
     port: 465,
@@ -256,6 +258,7 @@ app.post("/setAddress", async (req, res) => {
 
 
     transporter.sendMail({
+        
         from: process.env.MAIL_USER,
         to: userEmail,
         subject: "Thank You for order, Your Order is Confirmed",
